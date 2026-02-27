@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create vite@latest . -- --template react-ts)",
+      "Bash(node -e \":*)",
+      "Bash(npm install)",
+      "Bash(npm install clsx --prefix \"e:/AI agents/EduSync Project/EduSync\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm run build)",
+      "Bash(gcloud --version)",
+      "Bash(gsutil --version)",
+      "Bash(npx firebase --version)",
+      "Bash(npx firebase-tools --version)"
+    ]
+  }
+}
