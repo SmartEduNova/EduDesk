@@ -1,26 +1,31 @@
 import { useEffect, useState, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Users, FileText, CheckCircle, Clock,
+  Type, Image, FileDown, Youtube,
 } from 'lucide-react'
 import { AppShell }   from '@/components/layout/AppShell'
 import { TopBar }     from '@/components/layout/TopBar'
-import { Button }     from '@/components/ui/Button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card }       from '@/components/ui/Card'
 import { PageLoader } from '@/components/ui/Spinner'
-import { getClass }   from '@/lib/classes'
 import {
   subscribeToClassAssignments,
-  createAssignment,
   deleteAssignment,
   getAssignmentSubmissions,
-  type CreateAssignmentInput,
 } from '@/lib/assignments'
-import { useAuth } from '@/contexts/AuthContext'
 import { formatDistanceToNow, format, isPast, parseISO } from 'date-fns'
-import type { Assignment, AssignmentSubmission } from '@/types'
+import type { Assignment, AssignmentSubmission, AssignmentBlockType } from '@/types'
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Block type icon map ──────────────────────────────────────────────────────
+
+const BLOCK_ICON: Record<AssignmentBlockType, React.ReactNode> = {
+  text:    <Type     className="w-3 h-3" />,
+  image:   <Image    className="w-3 h-3" />,
+  file:    <FileDown className="w-3 h-3" />,
+  youtube: <Youtube  className="w-3 h-3" />,
+}
+
+// ─── Submission row ───────────────────────────────────────────────────────────
 
 function SubmissionRow({ sub }: { sub: AssignmentSubmission }) {
   const statusStyle =
@@ -60,20 +65,29 @@ function SubmissionRow({ sub }: { sub: AssignmentSubmission }) {
   )
 }
 
+// ─── Assignment card ──────────────────────────────────────────────────────────
+
 function AssignmentCard({
   assignment,
   onDelete,
 }: {
   assignment: Assignment
-  onDelete: (id: string) => void
+  onDelete:   (id: string) => void
 }) {
   const [expanded,    setExpanded]    = useState(false)
   const [subs,        setSubs]        = useState<AssignmentSubmission[]>([])
   const [loadingSubs, setLoadingSubs] = useState(false)
 
-  const isOverdue = assignment.dueDate
-    ? isPast(parseISO(assignment.dueDate))
-    : false
+  const isOverdue = assignment.dueDate ? isPast(parseISO(assignment.dueDate)) : false
+
+  // Block summary: count by type
+  const blockCounts = assignment.blocks.reduce<Partial<Record<AssignmentBlockType, number>>>(
+    (acc, b) => { acc[b.type] = (acc[b.type] ?? 0) + 1; return acc },
+    {}
+  )
+
+  // First text block content as preview
+  const firstText = assignment.blocks.find(b => b.type === 'text')?.data.content ?? ''
 
   const handleExpand = async () => {
     if (!expanded && subs.length === 0) {
@@ -93,6 +107,7 @@ function AssignmentCard({
     <Card>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
+          {/* Title + badges */}
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <p className="text-sm font-semibold text-gray-900">{assignment.title}</p>
             {assignment.dueDate && (
@@ -108,9 +123,26 @@ function AssignmentCard({
               </span>
             )}
           </div>
-          {assignment.description && (
-            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{assignment.description}</p>
+
+          {/* Block type pills */}
+          {assignment.blocks.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+              {(Object.entries(blockCounts) as [AssignmentBlockType, number][]).map(([type, count]) => (
+                <span key={type}
+                  className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full"
+                >
+                  {BLOCK_ICON[type]}
+                  {count > 1 ? `${count} ` : ''}{type}
+                </span>
+              ))}
+            </div>
           )}
+
+          {/* First text preview */}
+          {firstText && (
+            <p className="text-xs text-gray-400 mt-1 line-clamp-1">{firstText}</p>
+          )}
+
           <p className="text-[11px] text-gray-400 mt-1">
             Posted {formatDistanceToNow(assignment.createdAt, { addSuffix: true })}
           </p>
@@ -124,7 +156,7 @@ function AssignmentCard({
         </button>
       </div>
 
-      {/* Expand submissions */}
+      {/* Submissions toggle */}
       <button
         onClick={handleExpand}
         className="mt-3 flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700"
@@ -164,131 +196,17 @@ function AssignmentCard({
   )
 }
 
-// ─── Create form ──────────────────────────────────────────────────────────────
-
-function CreateForm({
-  classId,
-  className,
-  teacherId,
-  onCreated,
-  onCancel,
-}: {
-  classId:   string
-  className: string
-  teacherId: string
-  onCreated: () => void
-  onCancel:  () => void
-}) {
-  const [title,           setTitle]           = useState('')
-  const [description,     setDescription]     = useState('')
-  const [dueDate,         setDueDate]         = useState('')
-  const [allowFileUpload, setAllowFileUpload] = useState(false)
-  const [saving,          setSaving]          = useState(false)
-  const [error,           setError]           = useState('')
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) { setError('Title is required'); return }
-    setSaving(true)
-    try {
-      const input: CreateAssignmentInput = {
-        title,
-        description: description || undefined,
-        dueDate:     dueDate || null,
-        allowFileUpload,
-      }
-      await createAssignment(classId, className, teacherId, input)
-      onCreated()
-    } catch {
-      setError('Failed to create assignment. Please try again.')
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>New Assignment</CardTitle>
-      </CardHeader>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Title <span className="text-red-500">*</span>
-          </label>
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="e.g. Chapter 3 exercises"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Description (optional)
-          </label>
-          <textarea
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Instructions or notes for students…"
-            rows={3}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Due date (optional)
-          </label>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={e => setDueDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={allowFileUpload}
-            onChange={e => setAllowFileUpload(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <span className="text-sm text-gray-700">Allow students to upload file / photo</span>
-        </label>
-
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
-        <div className="flex gap-2 pt-1">
-          <Button type="button" variant="outline" size="sm" className="flex-1" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" size="sm" className="flex-1" disabled={saving}>
-            {saving ? 'Creating…' : 'Create'}
-          </Button>
-        </div>
-      </form>
-    </Card>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ClassAssignments() {
-  const { classId }    = useParams<{ classId: string }>()
-  const { user }       = useAuth()
-  const [className,  setClassName]  = useState('')
+  const { classId }  = useParams<{ classId: string }>()
+  const navigate     = useNavigate()
   const [loading,    setLoading]    = useState(true)
   const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [showForm,   setShowForm]   = useState(false)
   const unsubRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (!classId) return
-    getClass(classId).then(cls => {
-      if (cls) setClassName(cls.name)
-    })
     unsubRef.current = subscribeToClassAssignments(classId, items => {
       setAssignments(items)
       setLoading(false)
@@ -309,30 +227,18 @@ export default function ClassAssignments() {
         title="Assignments"
         back={`/teacher/classes/${classId}`}
         right={
-          !showForm ? (
-            <button
-              onClick={() => setShowForm(true)}
-              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          ) : undefined
+          <button
+            onClick={() => navigate(`/teacher/classes/${classId}/assignments/new`)}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
         }
       />
 
       <main className="flex-1 p-4 pb-8 flex flex-col gap-3">
 
-        {showForm && classId && user && (
-          <CreateForm
-            classId={classId}
-            className={className}
-            teacherId={user.uid}
-            onCreated={() => setShowForm(false)}
-            onCancel={() => setShowForm(false)}
-          />
-        )}
-
-        {!loading && assignments.length === 0 && !showForm && (
+        {assignments.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center gap-2 py-20 text-center">
             <FileText className="w-10 h-10 text-gray-200" />
             <p className="text-sm font-medium text-gray-500">No assignments yet</p>

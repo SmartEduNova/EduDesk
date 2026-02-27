@@ -19,7 +19,8 @@ const TeacherClasses       = lazy(() => import('@/pages/teacher/Classes'))
 const TeacherClassForm     = lazy(() => import('@/pages/teacher/ClassForm'))
 const TeacherClassDetail   = lazy(() => import('@/pages/teacher/ClassDetail'))
 const TeacherClassStudents = lazy(() => import('@/pages/teacher/ClassStudents'))
-const TeacherClassAssignments = lazy(() => import('@/pages/teacher/ClassAssignments'))
+const TeacherClassAssignments    = lazy(() => import('@/pages/teacher/ClassAssignments'))
+const TeacherClassAssignmentNew  = lazy(() => import('@/pages/teacher/ClassAssignmentNew'))
 const TeacherReminders     = lazy(() => import('@/pages/teacher/Reminders'))
 const TeacherProfile       = lazy(() => import('@/pages/teacher/Profile'))
 
@@ -75,7 +76,8 @@ function AppRoutes() {
                   <Route path="classes/:classId"          element={<TeacherClassDetail />} />
                   <Route path="classes/:classId/edit"     element={<TeacherClassForm />} />
                   <Route path="classes/:classId/students"    element={<TeacherClassStudents />} />
-                  <Route path="classes/:classId/assignments" element={<TeacherClassAssignments />} />
+                  <Route path="classes/:classId/assignments"     element={<TeacherClassAssignments />} />
+                  <Route path="classes/:classId/assignments/new" element={<TeacherClassAssignmentNew />} />
                   <Route path="reminders"               element={<TeacherReminders />} />
                   <Route path="profile"                 element={<TeacherProfile />} />
                   <Route index element={<Navigate to="dashboard" replace />} />

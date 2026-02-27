@@ -111,14 +111,34 @@ export type SubmissionStatus = 'pending' | 'done' | 'submitted'
 // done      = student self-marked as done (no file)
 // submitted = student uploaded a file
 
+// Block-based content architecture
+export type AssignmentBlockType = 'text' | 'image' | 'file' | 'youtube'
+
+export interface AssignmentBlock {
+  id: string
+  type: AssignmentBlockType
+  data: {
+    // text
+    content?: string
+    // image
+    imageUrl?: string
+    caption?: string
+    // file
+    fileUrl?: string
+    fileName?: string
+    // youtube
+    videoUrl?: string
+  }
+}
+
 export interface Assignment {
   id: string
   classId: string
   className: string
   teacherId: string
   title: string
-  description?: string
-  dueDate?: string | null   // ISO date string 'YYYY-MM-DD', null = no due date
+  blocks: AssignmentBlock[]          // ordered content blocks
+  dueDate?: string | null            // ISO date string 'YYYY-MM-DD', null = no due date
   allowFileUpload: boolean
   createdAt: Date
   updatedAt: Date

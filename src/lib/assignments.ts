@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { db, storage } from '@/lib/firebase'
-import type { Assignment, AssignmentSubmission, SubmissionStatus } from '@/types'
+import type { Assignment, AssignmentBlock, AssignmentSubmission, SubmissionStatus } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -25,9 +25,9 @@ function toAssignment(id: string, data: Record<string, unknown>): Assignment {
     className:       data.className as string,
     teacherId:       data.teacherId as string,
     title:           data.title as string,
-    description:     data.description as string | undefined,
+    blocks:          (data.blocks as AssignmentBlock[] | undefined) ?? [],
     dueDate:         data.dueDate as string | null | undefined,
-    allowFileUpload: data.allowFileUpload as boolean,
+    allowFileUpload: (data.allowFileUpload as boolean) ?? false,
     createdAt: data.createdAt instanceof Timestamp
       ? data.createdAt.toDate()
       : new Date(data.createdAt as string),
@@ -63,7 +63,7 @@ function toSubmission(id: string, data: Record<string, unknown>): AssignmentSubm
 
 export interface CreateAssignmentInput {
   title:           string
-  description?:    string
+  blocks:          AssignmentBlock[]
   dueDate?:        string | null
   allowFileUpload: boolean
 }
@@ -79,14 +79,28 @@ export async function createAssignment(
     className,
     teacherId,
     title:           input.title.trim(),
+    blocks:          input.blocks,
     allowFileUpload: input.allowFileUpload,
+    dueDate:         input.dueDate ?? null,
     createdAt:       serverTimestamp(),
     updatedAt:       serverTimestamp(),
-    ...(input.description?.trim() ? { description: input.description.trim() } : {}),
-    ...(input.dueDate             ? { dueDate: input.dueDate }                : { dueDate: null }),
   }
-  const ref = await addDoc(collection(db, 'assignments'), data)
-  return ref.id
+  const docRef = await addDoc(collection(db, 'assignments'), data)
+  return docRef.id
+}
+
+/** Upload a file for an assignment content block (image or file block). */
+export async function uploadAssignmentBlockFile(
+  classId: string,
+  blockId: string,
+  file: File,
+): Promise<{ url: string; name: string }> {
+  const ext     = file.name.split('.').pop() ?? 'bin'
+  const path    = `assignmentBlocks/${classId}/${blockId}.${ext}`
+  const storRef = ref(storage, path)
+  await uploadBytes(storRef, file)
+  const url = await getDownloadURL(storRef)
+  return { url, name: file.name }
 }
 
 export async function deleteAssignment(assignmentId: string): Promise<void> {
