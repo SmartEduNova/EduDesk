@@ -144,6 +144,12 @@ export interface Assignment {
   updatedAt: Date
 }
 
+export interface SubmissionFile {
+  url:         string
+  name:        string
+  storagePath: string   // needed to delete from Firebase Storage
+}
+
 export interface AssignmentSubmission {
   id: string                // composite key: {assignmentId}_{studentId}
   assignmentId: string
@@ -151,6 +157,8 @@ export interface AssignmentSubmission {
   studentId: string
   studentName: string
   status: SubmissionStatus
+  files?: SubmissionFile[]  // multiple uploaded files
+  // legacy single-file fields (kept for backwards compat)
   fileUrl?: string
   fileName?: string
   submittedAt?: Date

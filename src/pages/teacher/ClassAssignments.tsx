@@ -28,39 +28,60 @@ const BLOCK_ICON: Record<AssignmentBlockType, React.ReactNode> = {
 // ─── Submission row ───────────────────────────────────────────────────────────
 
 function SubmissionRow({ sub }: { sub: AssignmentSubmission }) {
+  const files       = sub.files ?? []
+  const legacyFile  = sub.fileUrl && !files.length ? sub.fileUrl : null
+  const fileCount   = files.length || (legacyFile ? 1 : 0)
+
   const statusStyle =
     sub.status === 'submitted' ? 'bg-green-100 text-green-700' :
     sub.status === 'done'      ? 'bg-blue-100  text-blue-700'  :
                                  'bg-gray-100  text-gray-500'
   const statusLabel =
-    sub.status === 'submitted' ? 'File uploaded' :
-    sub.status === 'done'      ? 'Marked done'   : 'Pending'
+    sub.status === 'submitted' ? `${fileCount} file${fileCount !== 1 ? 's' : ''}` :
+    sub.status === 'done'      ? 'Marked done' : 'Pending'
 
   return (
-    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 truncate">{sub.studentName}</p>
-        {sub.submittedAt && (
-          <p className="text-[11px] text-gray-400">
-            {formatDistanceToNow(sub.submittedAt, { addSuffix: true })}
-          </p>
-        )}
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-2">
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusStyle}`}>
+    <div className="py-2 border-b border-gray-100 last:border-0">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">{sub.studentName}</p>
+          {sub.submittedAt && (
+            <p className="text-[11px] text-gray-400">
+              {formatDistanceToNow(sub.submittedAt, { addSuffix: true })}
+            </p>
+          )}
+        </div>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2 ${statusStyle}`}>
           {statusLabel}
         </span>
-        {sub.fileUrl && (
-          <a
-            href={sub.fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary-600 hover:underline text-[11px] font-medium"
-          >
-            View
-          </a>
-        )}
       </div>
+
+      {/* File links */}
+      {files.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+          {files.map((f, i) => (
+            <a
+              key={f.url}
+              href={f.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary-600 hover:underline text-[11px] font-medium truncate max-w-[140px]"
+            >
+              {f.name || `File ${i + 1}`}
+            </a>
+          ))}
+        </div>
+      )}
+      {legacyFile && (
+        <a
+          href={legacyFile}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary-600 hover:underline text-[11px] font-medium mt-1 block"
+        >
+          {sub.fileName ?? 'View file'}
+        </a>
+      )}
     </div>
   )
 }

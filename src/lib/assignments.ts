@@ -3,18 +3,21 @@ import {
   doc,
   addDoc,
   setDoc,
+  updateDoc,
   deleteDoc,
   getDocs,
   query,
   where,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
+  arrayRemove,
   Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { db, storage } from '@/lib/firebase'
-import type { Assignment, AssignmentBlock, AssignmentSubmission, SubmissionStatus } from '@/types'
+import type { Assignment, AssignmentBlock, AssignmentSubmission, SubmissionFile, SubmissionStatus } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -45,6 +48,7 @@ function toSubmission(id: string, data: Record<string, unknown>): AssignmentSubm
     studentId:    data.studentId as string,
     studentName:  data.studentName as string,
     status:       data.status as SubmissionStatus,
+    files:        (data.files as SubmissionFile[] | undefined) ?? [],
     fileUrl:      data.fileUrl as string | undefined,
     fileName:     data.fileName as string | undefined,
     submittedAt:  data.submittedAt instanceof Timestamp
@@ -192,22 +196,28 @@ export async function markAssignmentDone(
   }, { merge: true })
 }
 
-/** Upload a file and record submission. */
-export async function submitAssignmentFile(
+/**
+ * Upload one or more files and append them to the student's submission.
+ * Uses arrayUnion so concurrent uploads from the same student don't overwrite each other.
+ */
+export async function addSubmissionFiles(
   assignmentId: string,
   classId: string,
   studentId: string,
   studentName: string,
-  file: File,
+  files: File[],
 ): Promise<void> {
-  const id      = `${assignmentId}_${studentId}`
-  const docRef  = doc(db, 'assignmentSubmissions', id)
-  const ext     = file.name.split('.').pop() ?? 'bin'
-  const path    = `assignmentSubmissions/${classId}/${assignmentId}/${studentId}.${ext}`
-  const storRef = ref(storage, path)
+  const docRef = doc(db, 'assignmentSubmissions', `${assignmentId}_${studentId}`)
 
-  await uploadBytes(storRef, file)
-  const fileUrl = await getDownloadURL(storRef)
+  const uploaded: SubmissionFile[] = []
+  for (const file of files) {
+    const safeName    = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const storagePath = `assignmentSubmissions/${classId}/${assignmentId}/${studentId}/${Date.now()}_${safeName}`
+    const storRef     = ref(storage, storagePath)
+    await uploadBytes(storRef, file)
+    const url = await getDownloadURL(storRef)
+    uploaded.push({ url, name: file.name, storagePath })
+  }
 
   await setDoc(docRef, {
     assignmentId,
@@ -215,20 +225,27 @@ export async function submitAssignmentFile(
     studentId,
     studentName,
     status:      'submitted',
-    fileUrl,
-    fileName:    file.name,
+    files:       arrayUnion(...uploaded),
     submittedAt: serverTimestamp(),
     createdAt:   serverTimestamp(),
     updatedAt:   serverTimestamp(),
   }, { merge: true })
 }
 
-/** Remove a student's submission file from Storage (best-effort). */
-export async function deleteSubmissionFile(fileUrl: string): Promise<void> {
+/** Remove one file from the student's submission and delete it from Storage. */
+export async function removeSubmissionFile(
+  assignmentId: string,
+  studentId: string,
+  file: SubmissionFile,
+): Promise<void> {
+  const docRef = doc(db, 'assignmentSubmissions', `${assignmentId}_${studentId}`)
+  await updateDoc(docRef, {
+    files:     arrayRemove(file),
+    updatedAt: serverTimestamp(),
+  })
   try {
-    const storRef = ref(storage, fileUrl)
-    await deleteObject(storRef)
+    await deleteObject(ref(storage, file.storagePath))
   } catch {
-    // ignore — file may not exist
+    // ignore — file may already be gone
   }
 }

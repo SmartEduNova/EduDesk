@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
-import { FileText, CheckCircle, Upload, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  FileText, CheckCircle, Upload, ChevronDown, ChevronUp,
+  X, Loader2, ExternalLink,
+} from 'lucide-react'
 import { AppShell }  from '@/components/layout/AppShell'
 import { TopBar }    from '@/components/layout/TopBar'
 import { BottomNav } from '@/components/layout/BottomNav'
@@ -12,10 +15,11 @@ import {
   subscribeToStudentAssignments,
   subscribeToStudentSubmissions,
   markAssignmentDone,
-  submitAssignmentFile,
+  addSubmissionFiles,
+  removeSubmissionFile,
 } from '@/lib/assignments'
 import { format, isPast, parseISO } from 'date-fns'
-import type { Assignment, AssignmentSubmission } from '@/types'
+import type { Assignment, AssignmentSubmission, SubmissionFile } from '@/types'
 
 // ─── Assignment card ──────────────────────────────────────────────────────────
 
@@ -30,16 +34,25 @@ function AssignmentCard({
   studentName: string
   studentId:   string
 }) {
-  const [expanded,    setExpanded]    = useState(false)
-  const [uploading,   setUploading]   = useState(false)
-  const [markingDone, setMarkingDone] = useState(false)
-  const [error,       setError]       = useState('')
+  const [expanded,     setExpanded]     = useState(false)
+  const [uploading,    setUploading]    = useState(false)
+  const [markingDone,  setMarkingDone]  = useState(false)
+  const [removingPath, setRemovingPath] = useState<string | null>(null)
+  const [error,        setError]        = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isOverdue   = assignment.dueDate ? isPast(parseISO(assignment.dueDate)) : false
   const isDone      = submission?.status === 'done'
   const isSubmitted = submission?.status === 'submitted'
   const responded   = isDone || isSubmitted
+
+  // Combine new multi-file list with legacy single-file (display only)
+  const newFiles: SubmissionFile[] = submission?.files ?? []
+  const legacyFile: SubmissionFile | null =
+    submission?.fileUrl && !newFiles.length
+      ? { url: submission.fileUrl, name: submission.fileName ?? 'file', storagePath: '' }
+      : null
+  const allFiles = legacyFile ? [legacyFile, ...newFiles] : newFiles
 
   const handleMarkDone = async () => {
     setMarkingDone(true)
@@ -53,13 +66,13 @@ function AssignmentCard({
     }
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? [])
+    if (!selected.length) return
     setUploading(true)
     setError('')
     try {
-      await submitAssignmentFile(assignment.id, assignment.classId, studentId, studentName, file)
+      await addSubmissionFiles(assignment.id, assignment.classId, studentId, studentName, selected)
     } catch {
       setError('Upload failed. Please try again.')
     } finally {
@@ -68,9 +81,22 @@ function AssignmentCard({
     }
   }
 
+  const handleRemoveFile = async (file: SubmissionFile) => {
+    if (!file.storagePath) return // legacy file — no storagePath, can't delete
+    setRemovingPath(file.storagePath)
+    setError('')
+    try {
+      await removeSubmissionFile(assignment.id, studentId, file)
+    } catch {
+      setError('Could not remove file. Please try again.')
+    } finally {
+      setRemovingPath(null)
+    }
+  }
+
   return (
     <Card>
-      {/* Header row — always visible */}
+      {/* Header — tap to expand/collapse */}
       <div
         className="flex items-start gap-2 cursor-pointer"
         onClick={() => setExpanded(v => !v)}
@@ -82,7 +108,7 @@ function AssignmentCard({
               <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
                 isSubmitted ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
               }`}>
-                {isSubmitted ? 'Submitted' : 'Done'}
+                {isSubmitted ? `${allFiles.length} file${allFiles.length !== 1 ? 's' : ''}` : 'Done'}
               </span>
             )}
           </div>
@@ -109,7 +135,7 @@ function AssignmentCard({
         </div>
       </div>
 
-      {/* Expanded: blocks + actions */}
+      {/* Expanded content */}
       {expanded && (
         <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-3">
 
@@ -118,34 +144,70 @@ function AssignmentCard({
             <AssignmentContent blocks={assignment.blocks} />
           )}
 
-          {/* Submitted file link */}
-          {isSubmitted && submission?.fileUrl && (
-            <a
-              href={submission.fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-xs text-primary-600 hover:underline"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View your submission ({submission.fileName ?? 'file'})
-            </a>
+          {/* Uploaded files list */}
+          {allFiles.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                Submitted files ({allFiles.length})
+              </p>
+              {allFiles.map(file => (
+                <div
+                  key={file.url}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100"
+                >
+                  <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 text-xs text-primary-600 hover:underline truncate"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {file.name}
+                  </a>
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 text-gray-400 hover:text-gray-600"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                  {file.storagePath && (
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRemoveFile(file) }}
+                      disabled={removingPath === file.storagePath}
+                      className="shrink-0 text-gray-400 hover:text-red-500 disabled:opacity-50"
+                    >
+                      {removingPath === file.storagePath
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <X className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
 
           {error && <p className="text-xs text-red-500">{error}</p>}
 
           {/* Action buttons */}
-          {!responded && (
+          {!isDone && (
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                onClick={handleMarkDone}
-                disabled={markingDone || uploading}
-              >
-                <CheckCircle className="w-4 h-4" />
-                {markingDone ? 'Saving…' : 'Mark done'}
-              </Button>
+              {!isSubmitted && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleMarkDone}
+                  disabled={markingDone || uploading}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {markingDone ? 'Saving…' : 'Mark done'}
+                </Button>
+              )}
 
               {assignment.allowFileUpload && (
                 <>
@@ -156,19 +218,26 @@ function AssignmentCard({
                     disabled={uploading || markingDone}
                   >
                     <Upload className="w-4 h-4" />
-                    {uploading ? 'Uploading…' : 'Upload file'}
+                    {uploading
+                      ? 'Uploading…'
+                      : allFiles.length > 0
+                        ? 'Add more files'
+                        : 'Upload files'
+                    }
                   </Button>
                   <input
                     ref={fileInputRef}
                     type="file"
+                    multiple
                     accept="image/*,.pdf,.doc,.docx"
                     className="hidden"
-                    onChange={handleFileChange}
+                    onChange={handleFilesChange}
                   />
                 </>
               )}
             </div>
           )}
+
         </div>
       )}
     </Card>
