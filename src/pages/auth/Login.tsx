@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { signInWithEmail, getUserProfile } from '@/lib/auth'
 
 interface LoginForm {
-  email: string
+  identifier: string
   password: string
 }
 
@@ -30,10 +30,15 @@ export default function Login() {
     }
   }
 
-  const onSubmit = async ({ email, password }: LoginForm) => {
+  const onSubmit = async ({ identifier, password }: LoginForm) => {
     setError('')
     try {
-      const user = await signInWithEmail(email, password)
+      const isPhone = /^\+?[0-9\s-]+$/.test(identifier)
+      const authEmail = isPhone 
+        ? `${identifier.replace(/\D/g, '')}@phone.edusync.app`
+        : identifier
+
+      const user = await signInWithEmail(authEmail, password)
       await redirectUser(user.uid)
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code
@@ -66,14 +71,13 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            error={errors.email?.message}
-            {...register('email', {
-              required: 'Email is required',
-              pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email address' },
+            label="Email or Phone Number"
+            type="text"
+            placeholder="you@example.com or +1234567890"
+            autoComplete="username"
+            error={errors.identifier?.message}
+            {...register('identifier', {
+              required: 'Email or phone number is required',
             })}
           />
 

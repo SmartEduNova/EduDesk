@@ -9,7 +9,7 @@ import { registerWithEmail } from '@/lib/auth'
 
 interface RegisterForm {
   displayName: string
-  email: string
+  email?: string
   phoneNumber?: string
   password: string
   confirmPassword: string
@@ -25,8 +25,15 @@ export default function Register() {
 
   const onSubmit = async ({ email, password, displayName, phoneNumber }: RegisterForm) => {
     setError('')
+    
+    if (!email && !phoneNumber) {
+      setError('Please provide either an email address or a phone number.')
+      return
+    }
+
     try {
-      await registerWithEmail(email, password, displayName)
+      const authEmail = email || `${phoneNumber?.replace(/\D/g, '')}@phone.edusync.app`
+      await registerWithEmail(authEmail, password, displayName, phoneNumber)
       navigate('/auth/role-select', { 
         replace: true,
         state: { phoneNumber }
@@ -74,13 +81,12 @@ export default function Register() {
           />
 
           <Input
-            label="Email"
+            label="Email (Optional)"
             type="email"
             placeholder="you@example.com"
             autoComplete="email"
             error={errors.email?.message}
             {...register('email', {
-              required: 'Email is required',
               pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email address' },
             })}
           />

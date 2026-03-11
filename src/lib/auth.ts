@@ -25,7 +25,8 @@ export async function signInWithEmail(email: string, password: string) {
 export async function registerWithEmail(
   email: string,
   password: string,
-  displayName: string
+  displayName: string,
+  _phoneNumber?: string
 ) {
   const cred = await createUserWithEmailAndPassword(auth, email, password)
   await updateProfile(cred.user, { displayName })
@@ -45,9 +46,11 @@ export async function createUserProfile(
   phoneNumber?: string
 ): Promise<UserProfile> {
   // Build profile without undefined values — Firestore rejects undefined fields
+  const isSyntheticEmail = user.email?.endsWith('@phone.edusync.app')
+  
   const base = {
     uid:         user.uid,
-    email:       user.email ?? '',
+    email:       isSyntheticEmail ? '' : (user.email ?? ''),
     phoneNumber: phoneNumber || user.phoneNumber || '',
     displayName: user.displayName ?? user.email?.split('@')[0] ?? 'User',
     role,
