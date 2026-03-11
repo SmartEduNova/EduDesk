@@ -5,7 +5,7 @@ import { BookOpen, UserPlus, Eye, EyeOff } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { registerWithEmail, getUserProfile } from '@/lib/auth'
+import { registerWithEmail } from '@/lib/auth'
 
 interface RegisterForm {
   displayName: string
@@ -23,21 +23,10 @@ export default function Register() {
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<RegisterForm>()
   const passwordValue = watch('password')
 
-  const redirectUser = async (uid: string) => {
-    const profile = await getUserProfile(uid)
-    if (!profile?.role) {
-      navigate('/auth/role-select', { replace: true })
-    } else if (profile.role === 'teacher') {
-      navigate('/teacher/dashboard', { replace: true })
-    } else {
-      navigate('/student/status', { replace: true })
-    }
-  }
-
   const onSubmit = async ({ email, password, displayName, phoneNumber }: RegisterForm) => {
     setError('')
     try {
-      const user = await registerWithEmail(email, password, displayName)
+      await registerWithEmail(email, password, displayName)
       navigate('/auth/role-select', { 
         replace: true,
         state: { phoneNumber }
