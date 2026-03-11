@@ -5,9 +5,12 @@ export type UserRole = 'teacher' | 'student'
 export interface UserProfile {
   uid: string
   email: string
+  phoneNumber?: string
   displayName: string
   photoURL?: string
   role: UserRole
+  isApproved: boolean
+  isAdmin?: boolean
   createdAt: Date
   telegramId?: string   // linked Telegram user ID
 }

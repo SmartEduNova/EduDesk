@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Users, Clock, ChevronRight, Plus } from 'lucide-react'
+import { ReactNode } from 'react'
+import { BookOpen, Users, Clock, ChevronRight, Plus, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { AppShell } from '@/components/layout/AppShell'
 import { TopBar } from '@/components/layout/TopBar'
 import { BottomNav } from '@/components/layout/BottomNav'
@@ -33,6 +35,28 @@ export default function TeacherDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Hi, {firstName}</h1>
           <p className="text-sm text-gray-400 mt-0.5">{formatMonth(month)}</p>
         </div>
+
+        {/* User Approvals (Admin only) */}
+        {profile?.isAdmin && (
+          <div className="bg-primary-600 rounded-2xl p-4 text-white shadow-lg shadow-primary-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-lg font-bold uppercase tracking-wider">Admin</span>
+            </div>
+            <h3 className="text-lg font-bold">User Approvals</h3>
+            <p className="text-xs text-primary-100 mb-4">Review and approve new account requests from students and teachers.</p>
+            <Button 
+              size="sm"
+              fullWidth 
+              onClick={() => navigate('/teacher/approvals')}
+              className="bg-white text-primary-600 hover:bg-white/90 border-0 font-bold"
+            >
+              Manage Approvals
+            </Button>
+          </div>
+        )}
 
         {/* Stats strip */}
         <div className="grid grid-cols-2 gap-3">
@@ -97,7 +121,7 @@ export default function TeacherDashboard() {
 function StatCard({
   icon, label, value, bg, highlight = false,
 }: {
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   value: string
   bg: string

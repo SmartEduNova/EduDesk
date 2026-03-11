@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { ComponentType } from 'react'
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,7 +15,7 @@ import { useNotificationCount } from '@/contexts/NotificationContext'
 interface NavItem {
   to: string
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string }>
 }
 
 const teacherNav: NavItem[] = [

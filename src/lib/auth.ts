@@ -1,16 +1,16 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
   updateProfile,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
   type User,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import type { UserProfile, UserRole } from '@/types'
+// const googleProvider = new GoogleAuthProvider()
 
-const googleProvider = new GoogleAuthProvider()
 
 // ─── Sign In ──────────────────────────────────────────────────────────────────
 
@@ -19,10 +19,8 @@ export async function signInWithEmail(email: string, password: string) {
   return cred.user
 }
 
-export async function signInWithGoogle() {
-  const cred = await signInWithPopup(auth, googleProvider)
-  return cred.user
-}
+// Google auth removed as per user request
+
 
 // ─── Register ─────────────────────────────────────────────────────────────────
 
@@ -45,14 +43,17 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function createUserProfile(
   user: User,
-  role: UserRole
+  role: UserRole,
+  phoneNumber?: string
 ): Promise<UserProfile> {
   // Build profile without undefined values — Firestore rejects undefined fields
   const base = {
     uid:         user.uid,
     email:       user.email ?? '',
+    phoneNumber: phoneNumber || user.phoneNumber || '',
     displayName: user.displayName ?? user.email?.split('@')[0] ?? 'User',
     role,
+    isApproved:  false, // Requires admin approval
     createdAt:   serverTimestamp(),
   }
 

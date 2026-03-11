@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { GraduationCap, BookOpen, ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
@@ -38,6 +38,7 @@ const roles: RoleOption[] = [
 
 export default function RoleSelect() {
   const navigate          = useNavigate()
+  const location          = useLocation()
   const { user }          = useAuth()
   const [selected, setSelected] = useState<UserRole | null>(null)
   const [loading, setLoading]   = useState(false)
@@ -48,7 +49,8 @@ export default function RoleSelect() {
     setLoading(true)
     setError('')
     try {
-      await createUserProfile(user, selected)
+      const phoneNumber = (location.state as { phoneNumber?: string })?.phoneNumber
+      await createUserProfile(user, selected, phoneNumber)
       // Resume pending join flow if student came from an invite link
       const pendingCode = sessionStorage.getItem('pendingJoinCode')
       if (selected === 'student' && pendingCode) {

@@ -11,6 +11,7 @@ const Login          = lazy(() => import('@/pages/auth/Login'))
 const Register       = lazy(() => import('@/pages/auth/Register'))
 const RoleSelect     = lazy(() => import('@/pages/auth/RoleSelect'))
 const JoinClass      = lazy(() => import('@/pages/JoinClass'))
+const PendingApproval = lazy(() => import('@/pages/auth/PendingApproval'))
 const NotFound       = lazy(() => import('@/pages/NotFound'))
 
 // Teacher pages
@@ -22,6 +23,7 @@ const TeacherClassStudents = lazy(() => import('@/pages/teacher/ClassStudents'))
 const TeacherClassAssignments = lazy(() => import('@/pages/teacher/ClassAssignments'))
 const TeacherReminders     = lazy(() => import('@/pages/teacher/Reminders'))
 const TeacherProfile       = lazy(() => import('@/pages/teacher/Profile'))
+const UserApproval         = lazy(() => import('@/pages/teacher/UserApproval'))
 
 // Student pages
 const StudentStatus        = lazy(() => import('@/pages/student/Status'))
@@ -49,6 +51,20 @@ function RequireRole({ role, children }: { role: 'teacher' | 'student'; children
   return <>{children}</>
 }
 
+function RequireApproval({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useAuth()
+  if (loading) return <PageLoader />
+  if (!profile) return <Navigate to="/auth/login" replace />
+  
+  // Teachers might be auto-approved or pre-configured, but for now apply to all
+  // If user is Admin, they don't need approval (or they are the approver)
+  if (!profile.isApproved && !profile.isAdmin) {
+    return <Navigate to="/auth/pending-approval" replace />
+  }
+  
+  return <>{children}</>
+}
+
 // ─── App Router ───────────────────────────────────────────────────────────────
 
 function AppRoutes() {
@@ -59,6 +75,7 @@ function AppRoutes() {
         <Route path="/"                  element={<Landing />} />
         <Route path="/auth/login"        element={<Login />} />
         <Route path="/auth/register"     element={<Register />} />
+        <Route path="/auth/pending-approval" element={<RequireAuth><PendingApproval /></RequireAuth>} />
         <Route path="/auth/role-select"  element={<RequireAuth><RoleSelect /></RequireAuth>} />
         <Route path="/join/:code"        element={<JoinClass />} />
 
@@ -67,20 +84,23 @@ function AppRoutes() {
           path="/teacher/*"
           element={
             <RequireAuth>
-              <RequireRole role="teacher">
-                <Routes>
-                  <Route path="dashboard"               element={<TeacherDashboard />} />
-                  <Route path="classes"                 element={<TeacherClasses />} />
-                  <Route path="classes/new"             element={<TeacherClassForm />} />
-                  <Route path="classes/:classId"          element={<TeacherClassDetail />} />
-                  <Route path="classes/:classId/edit"     element={<TeacherClassForm />} />
-                  <Route path="classes/:classId/students"    element={<TeacherClassStudents />} />
-                  <Route path="classes/:classId/assignments" element={<TeacherClassAssignments />} />
-                  <Route path="reminders"               element={<TeacherReminders />} />
-                  <Route path="profile"                 element={<TeacherProfile />} />
-                  <Route index element={<Navigate to="dashboard" replace />} />
-                </Routes>
-              </RequireRole>
+              <RequireApproval>
+                <RequireRole role="teacher">
+                  <Routes>
+                    <Route path="dashboard"               element={<TeacherDashboard />} />
+                    <Route path="classes"                 element={<TeacherClasses />} />
+                    <Route path="classes/new"             element={<TeacherClassForm />} />
+                    <Route path="classes/:classId"          element={<TeacherClassDetail />} />
+                    <Route path="classes/:classId/edit"     element={<TeacherClassForm />} />
+                    <Route path="classes/:classId/students"    element={<TeacherClassStudents />} />
+                    <Route path="classes/:classId/assignments" element={<TeacherClassAssignments />} />
+                    <Route path="reminders"               element={<TeacherReminders />} />
+                    <Route path="profile"                 element={<TeacherProfile />} />
+                    <Route path="approvals"               element={<UserApproval />} />
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                  </Routes>
+                </RequireRole>
+              </RequireApproval>
             </RequireAuth>
           }
         />
@@ -90,16 +110,18 @@ function AppRoutes() {
           path="/student/*"
           element={
             <RequireAuth>
-              <RequireRole role="student">
-                <Routes>
-                  <Route path="status"        element={<StudentStatus />} />
-                  <Route path="payments"      element={<StudentPayments />} />
-                  <Route path="assignments"   element={<StudentAssignments />} />
-                  <Route path="notifications" element={<StudentNotifications />} />
-                  <Route path="profile"       element={<StudentProfile />} />
-                  <Route index element={<Navigate to="status" replace />} />
-                </Routes>
-              </RequireRole>
+              <RequireApproval>
+                <RequireRole role="student">
+                  <Routes>
+                    <Route path="status"        element={<StudentStatus />} />
+                    <Route path="payments"      element={<StudentPayments />} />
+                    <Route path="assignments"   element={<StudentAssignments />} />
+                    <Route path="notifications" element={<StudentNotifications />} />
+                    <Route path="profile"       element={<StudentProfile />} />
+                    <Route index element={<Navigate to="status" replace />} />
+                  </Routes>
+                </RequireRole>
+              </RequireApproval>
             </RequireAuth>
           }
         />

@@ -1,9 +1,11 @@
-import type { ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { TopBar } from './TopBar'
 
 interface AppShellProps {
   children: ReactNode
+  title?: string
   className?: string
 }
 
@@ -11,7 +13,7 @@ interface AppShellProps {
  * Outer shell that constrains content to mobile width and
  * leaves room for the fixed bottom navigation.
  */
-export function AppShell({ children, className }: AppShellProps) {
+export function AppShell({ children, title, className }: AppShellProps) {
   const online = useOnlineStatus()
 
   return (
@@ -22,6 +24,7 @@ export function AppShell({ children, className }: AppShellProps) {
             You are offline — some features may not be available
           </div>
         )}
+        {title && <TopBar title={title} />}
         {children}
       </div>
     </div>
