@@ -108,11 +108,26 @@ export interface ReminderLog {
 }
 
 // ─── Assignments ──────────────────────────────────────────────────────────────
-
+ 
 export type SubmissionStatus = 'pending' | 'done' | 'submitted'
 // pending   = student has not acted yet
 // done      = student self-marked as done (no file)
 // submitted = student uploaded a file
+
+export type BlockType = 
+  | 'text' 
+  | 'audio' 
+  | 'image' 
+  | 'download' 
+  | 'vimeo'
+  | 'quiz_fill_in_blank' 
+  | 'quiz_multiple_choice'
+
+export interface ModuleBlock {
+  id: string
+  type: BlockType
+  data: any
+}
 
 export interface Assignment {
   id: string
@@ -123,6 +138,7 @@ export interface Assignment {
   description?: string
   dueDate?: string | null   // ISO date string 'YYYY-MM-DD', null = no due date
   allowFileUpload: boolean
+  blocks?: ModuleBlock[]
   createdAt: Date
   updatedAt: Date
 }

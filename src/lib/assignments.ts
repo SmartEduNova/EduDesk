@@ -28,6 +28,7 @@ function toAssignment(id: string, data: Record<string, unknown>): Assignment {
     description:     data.description as string | undefined,
     dueDate:         data.dueDate as string | null | undefined,
     allowFileUpload: data.allowFileUpload as boolean,
+    blocks:          data.blocks as any[] | undefined,
     createdAt: data.createdAt instanceof Timestamp
       ? data.createdAt.toDate()
       : new Date(data.createdAt as string),
@@ -66,6 +67,7 @@ export interface CreateAssignmentInput {
   description?:    string
   dueDate?:        string | null
   allowFileUpload: boolean
+  blocks?:         any[]
 }
 
 export async function createAssignment(
@@ -84,6 +86,7 @@ export async function createAssignment(
     updatedAt:       serverTimestamp(),
     ...(input.description?.trim() ? { description: input.description.trim() } : {}),
     ...(input.dueDate             ? { dueDate: input.dueDate }                : { dueDate: null }),
+    ...(input.blocks              ? { blocks: input.blocks }                  : {}),
   }
   const ref = await addDoc(collection(db, 'assignments'), data)
   return ref.id

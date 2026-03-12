@@ -14,6 +14,7 @@ import {
   submitAssignmentFile,
   undoAssignmentSubmission,
 } from '@/lib/assignments'
+import { AssignmentBlocks } from '@/components/assignments/blocks/AssignmentBlocks'
 import { format, isPast, parseISO } from 'date-fns'
 import type { Assignment, AssignmentSubmission } from '@/types'
 
@@ -123,6 +124,11 @@ function AssignmentCard({
         {/* Description */}
         {assignment.description && (
           <p className="text-xs text-gray-600 leading-relaxed">{assignment.description}</p>
+        )}
+
+        {/* Content blocks */}
+        {assignment.blocks && assignment.blocks.length > 0 && (
+          <AssignmentBlocks blocks={assignment.blocks} />
         )}
 
         {/* Meta row */}
