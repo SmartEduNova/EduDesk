@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { formatDistanceToNow, format, isPast, parseISO } from 'date-fns'
 import type { Assignment, AssignmentSubmission, ModuleBlock, BlockType } from '@/types'
+import { AssignmentBlocks } from '@/components/assignments/blocks/AssignmentBlocks'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -112,6 +113,14 @@ function AssignmentCard({
           {assignment.description && (
             <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{assignment.description}</p>
           )}
+          
+          {/* Blocks preview in teacher view */}
+          {assignment.blocks && assignment.blocks.length > 0 && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <AssignmentBlocks blocks={assignment.blocks} />
+            </div>
+          )}
+
           <p className="text-[11px] text-gray-400 mt-1">
             Posted {formatDistanceToNow(assignment.createdAt, { addSuffix: true })}
           </p>

@@ -128,7 +128,10 @@ function AssignmentCard({
 
         {/* Content blocks */}
         {assignment.blocks && assignment.blocks.length > 0 && (
-          <AssignmentBlocks blocks={assignment.blocks} />
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lesson Content</p>
+            <AssignmentBlocks blocks={assignment.blocks} />
+          </div>
         )}
 
         {/* Meta row */}
