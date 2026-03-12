@@ -178,6 +178,15 @@ export async function markAssignmentDone(
   }, { merge: true })
 }
 
+/** Undo a submission (delete the status record). */
+export async function undoAssignmentSubmission(
+  assignmentId: string,
+  studentId: string
+): Promise<void> {
+  const docRef = doc(db, 'assignmentSubmissions', `${assignmentId}_${studentId}`)
+  await deleteDoc(docRef)
+}
+
 /** Upload a file and record submission. */
 export async function submitAssignmentFile(
   assignmentId: string,

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { FileText, CheckCircle, Upload, ExternalLink } from 'lucide-react'
+import { FileText, CheckCircle, Upload, ExternalLink, RotateCcw } from 'lucide-react'
 import { AppShell }  from '@/components/layout/AppShell'
 import { TopBar }    from '@/components/layout/TopBar'
 import { BottomNav } from '@/components/layout/BottomNav'
@@ -12,6 +12,7 @@ import {
   subscribeToStudentSubmissions,
   markAssignmentDone,
   submitAssignmentFile,
+  undoAssignmentSubmission,
 } from '@/lib/assignments'
 import { format, isPast, parseISO } from 'date-fns'
 import type { Assignment, AssignmentSubmission } from '@/types'
@@ -56,6 +57,16 @@ function AssignmentCard({
     }
   }
 
+  const handleUndo = async () => {
+    if (!confirm('Revert this assignment to not done?')) return
+    setError('')
+    try {
+      await undoAssignmentSubmission(assignment.id, studentId)
+    } catch {
+      setError('Failed to undo. Please try again.')
+    }
+  }
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -88,13 +99,24 @@ function AssignmentCard({
             <p className="text-[11px] text-primary-600 font-medium mt-0.5">{assignment.className}</p>
           </div>
           {responded && (
-            <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
-              isSubmitted
-                ? 'bg-green-100 text-green-700'
-                : 'bg-blue-100 text-blue-700'
-            }`}>
-              {isSubmitted ? 'Submitted' : 'Done'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {isDone && (
+                <button
+                  onClick={handleUndo}
+                  className="p-1 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                  title="Undo mark as done"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                isSubmitted
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {isSubmitted ? 'Submitted' : 'Done'}
+              </span>
+            </div>
           )}
         </div>
 

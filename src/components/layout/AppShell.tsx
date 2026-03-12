@@ -6,6 +6,7 @@ import { TopBar } from './TopBar'
 interface AppShellProps {
   children: ReactNode
   title?: string
+  back?: boolean | string
   className?: string
 }
 
@@ -13,7 +14,7 @@ interface AppShellProps {
  * Outer shell that constrains content to mobile width and
  * leaves room for the fixed bottom navigation.
  */
-export function AppShell({ children, title, className }: AppShellProps) {
+export function AppShell({ children, title, back, className }: AppShellProps) {
   const online = useOnlineStatus()
 
   return (
@@ -24,7 +25,7 @@ export function AppShell({ children, title, className }: AppShellProps) {
             You are offline — some features may not be available
           </div>
         )}
-        {title && <TopBar title={title} />}
+        {title && <TopBar title={title} back={back} />}
         {children}
       </div>
     </div>

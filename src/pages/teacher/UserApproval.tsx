@@ -68,7 +68,7 @@ export default function UserApproval() {
   if (loading) return <PageLoader />
 
   return (
-    <AppShell title="User Approvals">
+    <AppShell title="User Approvals" back={true}>
       <div className="flex flex-col flex-1 p-4 gap-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
