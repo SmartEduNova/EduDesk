@@ -31,6 +31,7 @@ const StudentPayments      = lazy(() => import('@/pages/student/Payments'))
 const StudentAssignments   = lazy(() => import('@/pages/student/Assignments'))
 const StudentNotifications = lazy(() => import('@/pages/student/Notifications'))
 const StudentProfile       = lazy(() => import('@/pages/student/Profile'))
+const AssignmentPlayer     = lazy(() => import('@/pages/student/AssignmentPlayer'))
 
 // ─── Protected Route Guards ───────────────────────────────────────────────────
 
@@ -116,6 +117,7 @@ function AppRoutes() {
                     <Route path="status"        element={<StudentStatus />} />
                     <Route path="payments"      element={<StudentPayments />} />
                     <Route path="assignments"   element={<StudentAssignments />} />
+                    <Route path="assignments/:assignmentId/play" element={<AssignmentPlayer />} />
                     <Route path="notifications" element={<StudentNotifications />} />
                     <Route path="profile"       element={<StudentProfile />} />
                     <Route index element={<Navigate to="status" replace />} />

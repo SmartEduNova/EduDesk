@@ -14,7 +14,7 @@ import {
   submitAssignmentFile,
   undoAssignmentSubmission,
 } from '@/lib/assignments'
-import { AssignmentBlocks } from '@/components/assignments/blocks/AssignmentBlocks'
+import { Link } from 'react-router-dom'
 import { format, isPast, parseISO } from 'date-fns'
 import type { Assignment, AssignmentSubmission } from '@/types'
 
@@ -121,18 +121,22 @@ function AssignmentCard({
           )}
         </div>
 
-        {/* Description */}
-        {assignment.description && (
-          <p className="text-xs text-gray-600 leading-relaxed">{assignment.description}</p>
-        )}
-
-        {/* Content blocks */}
-        {assignment.blocks && assignment.blocks.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lesson Content</p>
-            <AssignmentBlocks blocks={assignment.blocks} />
+        {/* Content Link */}
+        <Link 
+          to={`/student/assignments/${assignment.id}/play`}
+          className="bg-primary-50 p-3 rounded-xl border border-primary-100 flex items-center justify-between group hover:bg-primary-100 transition-all mb-2"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-primary-600">
+              <FileText className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-semibold text-primary-700">
+              View Assignment Content & Quizzes
+            </span>
           </div>
-        )}
+          <ExternalLink className="w-4 h-4 text-primary-400 group-hover:text-primary-600 transition-colors" />
+        </Link>
+
 
         {/* Meta row */}
         <div className="flex items-center gap-3 flex-wrap">

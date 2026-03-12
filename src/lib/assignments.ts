@@ -96,6 +96,22 @@ export async function deleteAssignment(assignmentId: string): Promise<void> {
   await deleteDoc(doc(db, 'assignments', assignmentId))
 }
 
+export async function updateAssignment(
+  assignmentId: string,
+  input: Partial<CreateAssignmentInput>
+): Promise<void> {
+  const data: any = {
+    updatedAt: serverTimestamp(),
+  }
+  if (input.title !== undefined) data.title = input.title.trim()
+  if (input.allowFileUpload !== undefined) data.allowFileUpload = input.allowFileUpload
+  if (input.description !== undefined) data.description = input.description.trim() || null
+  if (input.dueDate !== undefined) data.dueDate = input.dueDate || null
+  if (input.blocks !== undefined) data.blocks = input.blocks
+
+  await setDoc(doc(db, 'assignments', assignmentId), data, { merge: true })
+}
+
 /** Real-time list of assignments for a class, newest first. */
 export function subscribeToClassAssignments(
   classId: string,
