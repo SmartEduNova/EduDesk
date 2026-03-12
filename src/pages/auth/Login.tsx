@@ -14,8 +14,8 @@ interface LoginForm {
 
 export default function Login() {
   const navigate = useNavigate()
-  const [showPass, setShowPass]           = useState(false)
-  const [error, setError]                 = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [error, setError] = useState('')
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>()
 
@@ -34,7 +34,7 @@ export default function Login() {
     setError('')
     try {
       const isPhone = /^\+?[0-9\s-]+$/.test(identifier)
-      const authEmail = isPhone 
+      const authEmail = isPhone
         ? `${identifier.replace(/\D/g, '')}@phone.edusync.app`
         : identifier
 
@@ -45,7 +45,7 @@ export default function Login() {
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
         setError('Invalid email or password.')
       } else if (code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please try again later.')
+        setError('Too many attemptss. Please try again later.')
       } else {
         setError('Sign in failed. Please try again.')
       }
