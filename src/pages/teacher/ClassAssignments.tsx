@@ -213,7 +213,9 @@ function AssignmentForm({
   const [description,     setDescription]     = useState(initialData?.description ?? '')
   const [dueDate,         setDueDate]         = useState(initialData?.dueDate ?? '')
   const [allowFileUpload, setAllowFileUpload] = useState(initialData?.allowFileUpload ?? false)
-  const [blocks,          setBlocks]          = useState<ModuleBlock[]>(initialData?.blocks ?? [])
+  const [blocks,          setBlocks]          = useState<ModuleBlock[]>(
+    initialData?.blocks?.map(b => ({ ...b, id: b.id || Math.random().toString(36).substr(2, 9) })) ?? []
+  )
   const [saving,          setSaving]          = useState(false)
   const [error,           setError]           = useState('')
 
@@ -399,7 +401,7 @@ function AssignmentForm({
                           <input
                             value={ans}
                             onChange={e => {
-                              const newAns = [...block.data.answers]
+                              const newAns = [...(block.data.answers || [])]
                               newAns[i] = e.target.value
                               updateBlockData(block.id, { ...block.data, answers: newAns })
                             }}
@@ -432,7 +434,7 @@ function AssignmentForm({
                 {/* Quiz Multiple Choice Editor */}
                 {block.type === 'quiz_multiple_choice' && (
                   <div className="flex flex-col gap-3">
-                    {block.data.questions.map((q: any, qIdx: number) => (
+                    {(block.data.questions || []).map((q: any, qIdx: number) => (
                       <div key={qIdx} className="p-2 bg-white border border-gray-100 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[10px] font-bold text-gray-400">Question #{qIdx+1}</span>
@@ -448,9 +450,9 @@ function AssignmentForm({
                           </button>
                         </div>
                         <input
-                          value={q.question}
+                          value={q.question || ''}
                           onChange={e => {
-                            const newQs = [...block.data.questions]
+                            const newQs = [...(block.data.questions || [])]
                             newQs[qIdx] = { ...q, question: e.target.value }
                             updateBlockData(block.id, { ...block.data, questions: newQs })
                           }}
@@ -458,24 +460,24 @@ function AssignmentForm({
                           className="w-full mb-2 p-1.5 text-xs bg-gray-50 border-0 rounded outline-none"
                         />
                         <div className="flex flex-col gap-1.5">
-                          {q.options.map((opt: string, oIdx: number) => (
+                          {(q.options || []).map((opt: string, oIdx: number) => (
                             <div key={oIdx} className="flex items-center gap-2">
                               <input
                                 type="radio"
                                 checked={q.correctIndex === oIdx}
                                 onChange={() => {
-                                  const newQs = [...block.data.questions]
+                                  const newQs = [...(block.data.questions || [])]
                                   newQs[qIdx] = { ...q, correctIndex: oIdx }
                                   updateBlockData(block.id, { ...block.data, questions: newQs })
                                 }}
                                 className="w-3 h-3 text-primary-600 focus:ring-primary-500"
                               />
                               <input
-                                value={opt}
+                                value={opt || ''}
                                 onChange={e => {
-                                  const newOptions = [...q.options]
+                                  const newOptions = [...(q.options || [])]
                                   newOptions[oIdx] = e.target.value
-                                  const newQs = [...block.data.questions]
+                                  const newQs = [...(block.data.questions || [])]
                                   newQs[qIdx] = { ...q, options: newOptions }
                                   updateBlockData(block.id, { ...block.data, questions: newQs })
                                 }}
@@ -604,6 +606,7 @@ export default function ClassAssignments() {
 
         {(showForm || editing) && classId && user && (
           <AssignmentForm
+            key={editing?.id || 'new'}
             classId={classId}
             className={className}
             teacherId={user.uid}
