@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
+import ReactQuill from 'react-quill-new'
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Users, FileText, CheckCircle, Clock,
   Type, Image, Video, Headphones, Download, HelpCircle, Edit3, X,
@@ -346,13 +347,21 @@ function AssignmentForm({
 
                 {/* Block specific editors */}
                 {block.type === 'text' && (
-                  <textarea
-                    value={block.data.content}
-                    onChange={e => updateBlockData(block.id, { ...block.data, content: e.target.value })}
-                    placeholder="Enter text content..."
-                    className="w-full p-2 text-xs border border-gray-200 rounded-lg focus:ring-1 focus:ring-primary-500 outline-none"
-                    rows={3}
-                  />
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <ReactQuill
+                      theme="snow"
+                      value={block.data.content || ''}
+                      onChange={content => updateBlockData(block.id, { ...block.data, content })}
+                      modules={{
+                        toolbar: [
+                          ['bold', 'italic', 'underline'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'clean']
+                        ]
+                      }}
+                      className="bg-white"
+                    />
+                  </div>
                 )}
                 {block.type === 'vimeo' && (
                   <input
@@ -387,13 +396,20 @@ function AssignmentForm({
                 {/* Quiz Fill in Blank Editor */}
                 {block.type === 'quiz_fill_in_blank' && (
                   <div className="flex flex-col gap-2">
-                    <textarea
-                      value={block.data.content}
-                      onChange={e => updateBlockData(block.id, { ...block.data, content: e.target.value })}
-                      placeholder="Text with [words in brackets] as placeholders..."
-                      className="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none"
-                      rows={2}
-                    />
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <ReactQuill
+                        theme="snow"
+                        value={block.data.content || ''}
+                        onChange={content => updateBlockData(block.id, { ...block.data, content })}
+                        placeholder="Text with [words in brackets] as placeholders..."
+                        modules={{
+                          toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            ['clean']
+                          ]
+                        }}
+                      />
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       {block.data.answers.map((ans: string, i: number) => (
                         <div key={i} className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-gray-100">
@@ -449,16 +465,24 @@ function AssignmentForm({
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                        <input
-                          value={q.question || ''}
-                          onChange={e => {
-                            const newQs = [...(block.data.questions || [])]
-                            newQs[qIdx] = { ...q, question: e.target.value }
-                            updateBlockData(block.id, { ...block.data, questions: newQs })
-                          }}
-                          placeholder="Question text"
-                          className="w-full mb-2 p-1.5 text-xs bg-gray-50 border-0 rounded outline-none"
-                        />
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-2">
+                          <ReactQuill
+                            theme="snow"
+                            value={q.question || ''}
+                            onChange={content => {
+                              const newQs = [...(block.data.questions || [])]
+                              newQs[qIdx] = { ...q, question: content }
+                              updateBlockData(block.id, { ...block.data, questions: newQs })
+                            }}
+                            placeholder="Question text"
+                            modules={{
+                              toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                ['clean']
+                              ]
+                            }}
+                          />
+                        </div>
                         <div className="flex flex-col gap-1.5">
                           {(q.options || []).map((opt: string, oIdx: number) => (
                             <div key={oIdx} className="flex items-center gap-2">

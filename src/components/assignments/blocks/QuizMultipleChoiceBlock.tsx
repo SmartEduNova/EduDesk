@@ -26,7 +26,10 @@ export function QuizMultipleChoiceBlock({ data }: { data: { questions?: Question
 
         return (
           <div key={qIndex} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-            <p className="text-sm font-semibold text-gray-800 mb-3">{q.question}</p>
+            <div 
+              className="text-sm font-semibold text-gray-800 mb-3 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: q.question }}
+            />
             
             <div className="flex flex-col gap-2">
               {q.options.map((opt, oIndex) => {

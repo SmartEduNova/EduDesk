@@ -28,7 +28,7 @@ export function QuizFillInBlankBlock({ data }: { data: { content: string; answer
         {parts.map((part, i) => (
           <span key={i} className="flex flex-col items-center">
             <span className="flex items-center">
-              {part}
+              <span dangerouslySetInnerHTML={{ __html: part }} />
               {i < parts.length - 1 && (
                 <div className="relative inline-flex flex-col items-center">
                   <input
