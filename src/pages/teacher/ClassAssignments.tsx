@@ -388,7 +388,7 @@ function AssignmentForm({
                     <textarea
                       value={block.data.content}
                       onChange={e => updateBlockData(block.id, { ...block.data, content: e.target.value })}
-                      placeholder="Text with [answer] placeholders..."
+                      placeholder="Text with [words in brackets] as placeholders..."
                       className="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none"
                       rows={2}
                     />
